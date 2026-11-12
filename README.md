@@ -40,6 +40,7 @@ in text and JSON output alike. CI-friendly exit codes.
 ## Quick start
 
 ```bash
+pipx install git+https://github.com/abhi12337/key-leak-check   # straight from GitHub
 pipx install .                          # from a clone of this repo (or: pip install .)
 
 key-leak-check scan                     # current folder (source, env files, build output)
