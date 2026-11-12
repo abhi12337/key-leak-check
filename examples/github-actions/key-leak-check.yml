@@ -1,0 +1,38 @@
+# Copy to .github/workflows/key-leak-check.yml in your web app's repo.
+# Static only: it reads the checked-out files and the build output; nothing is sent anywhere.
+name: key-leak-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  key-leak-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Build with the same public env vars your host uses, so the bundle is what ships.
+      # Leaked keys usually live in the build output, not only in the source.
+      - run: npm ci && npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Pin to a release tag or commit of key-leak-check you have reviewed.
+      - run: pipx install "git+https://github.com/OWNER/key-leak-check@v0.1.0"
+      - name: Scan source, env files and build output (fails on high/critical)
+        run: key-leak-check scan . --no-color --fail-on high
+      - name: JSON report artifact
+        if: always()
+        run: key-leak-check scan . --json --fail-on never > key-leak-check.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: key-leak-check-report
+          path: key-leak-check.json
